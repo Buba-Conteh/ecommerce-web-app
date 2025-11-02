@@ -126,7 +126,7 @@ function OrderPageContent() {
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Order Form */}
           <div className="space-y-6">
-            <Card>
+            <Card className="py-5">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Truck className="w-5 h-5" />
@@ -210,7 +210,7 @@ function OrderPageContent() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="py-5">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CreditCard className="w-5 h-5" />
@@ -269,7 +269,7 @@ function OrderPageContent() {
 
           {/* Order Summary */}
           <div>
-            <Card className="sticky top-8">
+            <Card className="sticky top-8 py-5">
               <CardHeader>
                 <CardTitle>Order Summary</CardTitle>
               </CardHeader>

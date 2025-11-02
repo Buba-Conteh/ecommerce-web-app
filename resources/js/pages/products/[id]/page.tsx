@@ -61,7 +61,7 @@ function ProductDetailContent({ id }: { id: number | string }) {
         setRelatedProducts(related_products)
         
         // Set primary image as selected
-        const primaryImage = productData.images.find(img => img.is_primary)
+        const primaryImage = productData.images.find((img: { is_primary: boolean }) => img.is_primary)
         setSelectedImage(primaryImage?.url || productData.images[0]?.url || "/placeholder.svg")
       } catch (err: any) {
         setError(err.message || 'Failed to fetch product')
@@ -137,7 +137,7 @@ function ProductDetailContent({ id }: { id: number | string }) {
   }
 
   const isOnSale = product.compare_price && product.compare_price > product.price
-  const discountPercentage = isOnSale 
+  const discountPercentage = isOnSale && product.compare_price
     ? Math.round(((product.compare_price - product.price) / product.compare_price) * 100)
     : 0
 

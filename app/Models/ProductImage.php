@@ -22,6 +22,10 @@ class ProductImage extends Model
         'is_primary' => 'boolean',
     ];
 
+    protected $appends = [
+        'url',
+    ];
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
@@ -35,5 +39,13 @@ class ProductImage extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('sort_order')->orderBy('id');
+    }
+
+    /**
+     * Get the full URL for the image
+     */
+    public function getUrlAttribute()
+    {
+        return $this->image_path ? asset('storage/' . $this->image_path) : null;
     }
 }

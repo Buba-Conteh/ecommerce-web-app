@@ -9,7 +9,6 @@ import { Link , usePage} from "@inertiajs/react"
 import { useCart } from "@/components/cart-provider"
 import { CartModal } from "@/components/cart-modal"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import TextLink from "./text-link"
 
 interface HeaderProps {
   wishlistCount?: number
@@ -117,9 +116,9 @@ export function Header({ wishlistCount = 0 }: HeaderProps) {
                   </Avatar>
                 </Link>
               ) : (
-                <TextLink className="text-primary no-underline outline-none" href={route('login')} tabIndex={5}>
-                Sign in
-            </TextLink>
+                <Link href="/login" className="text-primary no-underline outline-none hover:underline" tabIndex={5}>
+                  Sign in
+                </Link>
               )}
              
 

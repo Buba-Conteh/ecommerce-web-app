@@ -79,7 +79,7 @@ function EcommerceContent({ featuredProducts }: WelcomeProps) {
   console.log(products)
   return (
     <div className="min-h-screen bg-background ">
-      <Header className="px-10" />
+      <Header />
 
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-card to-secondary py-20 lg:py-32 px-10">

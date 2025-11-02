@@ -60,6 +60,7 @@ export function ProductCard({ product, onAddToCart, onAddToWishlist, onQuickView
   const discountPercentage = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0
+console.log(product);
 
   return (
     <Card
@@ -69,7 +70,7 @@ export function ProductCard({ product, onAddToCart, onAddToWishlist, onQuickView
       <CardContent className="p-0">
         <div className="aspect-square bg-secondary rounded-t-lg overflow-hidden relative">
           <img
-            src={product.image || "/placeholder.svg"}
+            src={product.image}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />

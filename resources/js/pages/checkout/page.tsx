@@ -73,7 +73,7 @@ export default function CheckoutPage() {
 					</div>
 				</div>
 				<div className="space-y-4">
-					<div className="bg-card border rounded-lg p-6">
+					<div className="bg-card border rounded-lg py-5">
 						<h2 className="text-xl font-semibold mb-4">Order Summary</h2>
 						{state.items.map((i) => (
 							<div key={i.id} className="flex justify-between text-sm mb-2">

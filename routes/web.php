@@ -1,14 +1,16 @@
 <?php
 
 use App\Http\Controllers\UserProfileController;
+use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Models\Order;
+use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
     // Get featured products for the homepage
-    $featuredProducts = \App\Models\Product::with(['category', 'brand', 'images'])
+    $featuredProducts = Product::with(['category', 'brand', 'images'])
         ->active()
         ->featured()
         ->limit(6)
@@ -74,6 +76,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
+});
+
+// Admin routes
+Route::prefix('/admin')->middleware(['auth'])->group(function () {
+    Route::get('/products/create', [AdminProductController::class, 'create'])->name('admin.products.create');
+});
+
+// Admin API routes
+Route::prefix('/api/admin')->middleware(['auth'])->group(function () {
+    Route::post('/products', [AdminProductController::class, 'store'])->name('admin.products.store');
 });
 
 require __DIR__.'/settings.php';
