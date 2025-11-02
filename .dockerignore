@@ -1,0 +1,57 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Dependencies
+node_modules
+vendor
+npm-debug.log
+yarn-error.log
+
+# Build artifacts
+public/hot
+public/storage
+storage/*.key
+storage/logs/*
+!storage/logs/.gitkeep
+bootstrap/cache/*
+!bootstrap/cache/.gitkeep
+
+# Development files
+.env
+.env.*
+!.env.example
+*.local
+.phpunit.result.cache
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker development files (keep for build)
+# Note: Dockerfile and docker/ directory are needed for build
+# docker-compose.yml  # Keep for potential multi-stage builds
+
+# Documentation
+*.md
+!README.md
+
+# Testing
+tests
+.phpunit.cache
+coverage
+
+# Misc
+.editorconfig
+.eslintrc*
+.prettierrc*
+tsconfig.json
+

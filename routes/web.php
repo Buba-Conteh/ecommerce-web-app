@@ -2,11 +2,23 @@
 
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PayPalController;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+// Health check endpoint for monitoring
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'healthy',
+        'timestamp' => now()->toIso8601String(),
+        'database' => DB::connection()->getPdo() ? 'connected' : 'disconnected',
+    ]);
+});
 
 Route::get('/', function () {
     // Get featured products for the homepage
@@ -87,6 +99,22 @@ Route::prefix('/admin')->middleware(['auth'])->group(function () {
 Route::prefix('/api/admin')->middleware(['auth'])->group(function () {
     Route::post('/products', [AdminProductController::class, 'store'])->name('admin.products.store');
 });
+
+// Payment routes
+Route::prefix('/api/payments')->middleware(['auth'])->group(function () {
+    // Stripe routes
+    Route::post('/stripe/create-intent', [PaymentController::class, 'createIntent'])->name('payments.stripe.create');
+    Route::post('/stripe/confirm', [PaymentController::class, 'confirm'])->name('payments.stripe.confirm');
+    Route::post('/stripe/webhook', [PaymentController::class, 'webhook'])->name('payments.stripe.webhook');
+    
+    // PayPal routes
+    Route::post('/paypal/create-order', [PayPalController::class, 'createOrder'])->name('payments.paypal.create');
+    Route::post('/paypal/capture', [PayPalController::class, 'capture'])->name('payments.paypal.capture');
+});
+
+// PayPal callback routes (no auth required)
+Route::get('/paypal/success', [PayPalController::class, 'success'])->name('paypal.success');
+Route::get('/paypal/cancel', [PayPalController::class, 'cancel'])->name('paypal.cancel');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
