@@ -19,7 +19,7 @@ COPY . .
 RUN composer install --no-dev --optimize-autoloader
 
 # Copy environment file
-COPY .env.example .env
+# COPY .env.example .env
 
 # Generate key
 RUN php artisan key:generate
