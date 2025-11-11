@@ -22,7 +22,7 @@ RUN composer install --no-dev --optimize-autoloader
 # COPY .env.example .env
 
 # Generate key
-RUN php artisan key:generate
+# RUN php artisan key:generate
 
 # Expose port
 EXPOSE 8000
