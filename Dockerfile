@@ -7,6 +7,8 @@ WORKDIR /var/www/html
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     git curl libpng-dev libonig-dev libxml2-dev zip unzip libpq-dev \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
     && docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath gd
 
 # Install Composer
