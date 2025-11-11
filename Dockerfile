@@ -1,20 +1,68 @@
-FROM richarvey/nginx-php-fpm:3.1.6
+# Use an official PHP image with Nginx as the base
+FROM php:8.3-fpm-alpine
 
+# Install necessary extensions and dependencies
+RUN apk add --no-cache \
+    nginx \
+    supervisor \
+    php8-pdo_mysql \
+    php8-mbstring \
+    php8-tokenizer \
+    php8-xml \
+    php8-ctype \
+    php8-session \
+    php8-zip \
+    php8-gd \
+    php8-opcache \
+    php8-json \
+    php8-dom \
+    php8-fileinfo \
+    php8-phar \
+    php8-cli \
+    php8-fpm \
+    php8-curl \
+    php8-iconv \
+    php8-openssl \
+    php8-bcmath \
+    php8-exif \
+    php8-intl \
+    php8-posix \
+    php8-pcntl \
+    php8-xmlreader \
+    php8-xmlwriter \
+    php8-simplexml \
+    php8-mysqli \
+    php8-pdo_sqlite \
+    php8-redis \
+    php8-imagick \
+    php8-xdebug # Optional, for development
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set the working directory
+WORKDIR /var/www/html
+
+# Copy the application code
 COPY . .
 
-# Image config
-ENV SKIP_COMPOSER 1
-ENV WEBROOT /var/www/html/public
-ENV PHP_ERRORS_STDERR 1
-ENV RUN_SCRIPTS 1
-ENV REAL_IP_HEADER 1
+# Install Composer dependencies
+RUN composer install --no-dev --optimize-autoloader
 
-# Laravel config
-ENV APP_ENV production
-ENV APP_DEBUG false
-ENV LOG_CHANNEL stderr
+# Generate application key and optimize configuration
+RUN php artisan key:generate --force
+RUN php artisan config:cache
+RUN php artisan route:cache
+RUN php artisan view:cache
 
-# Allow composer to run as root
-ENV COMPOSER_ALLOW_SUPERUSER 1
+# Configure Nginx
+COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 
-CMD ["/start.sh"]
+# Configure Supervisor
+COPY docker/supervisor/supervisord.conf /etc/supervisord.conf
+
+# Expose port 80 for Nginx
+EXPOSE 80
+
+# Start Nginx and PHP-FPM using Supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
