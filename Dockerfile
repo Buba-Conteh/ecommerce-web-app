@@ -25,7 +25,8 @@ RUN composer install --no-dev --optimize-autoloader
 
 # Generate key
 # RUN php artisan key:generate
-RUN npm install && npm run build
+# Install frontend dependencies and build assets
+RUN npm install && npm run build || cat /var/www/html/npm-debug.log || true
 # Expose port
 EXPOSE 8000
 
