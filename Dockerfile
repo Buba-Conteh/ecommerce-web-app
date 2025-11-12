@@ -25,7 +25,7 @@ RUN composer install --no-dev --optimize-autoloader
 
 # Generate key
 # RUN php artisan key:generate
-RUN npm install && npm run build
+# RUN npm install && npm run build
 # Expose port
 EXPOSE 8000
 
