@@ -1,3 +1,10 @@
+FROM node:18-alpine AS build
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
 # Use PHP 8.2 FPM as the base image
 FROM php:8.2-fpm
 
@@ -26,7 +33,8 @@ RUN composer install --no-dev --optimize-autoloader
 # Generate key
 # RUN php artisan key:generate
 # Install frontend dependencies and build assets
-RUN npm install && npm run build || cat /var/www/html/npm-debug.log || true
+# RUN npm install && npm run build || cat /var/www/html/npm-debug.log || true
+COPY --from=build /app/public/build ./public/build
 # Expose port
 EXPOSE 8000
 
