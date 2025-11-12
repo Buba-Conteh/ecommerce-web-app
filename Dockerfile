@@ -22,8 +22,8 @@ RUN composer install --no-dev --optimize-autoloader
 
 # Copy environment file
 # COPY .env.example .env
-RUN npm install
-RUN npm run build --force
+# RUN npm install
+# RUN npm run build --force
 # Generate key
 # RUN php artisan key:generate
 # RUN npm install && npm run build
