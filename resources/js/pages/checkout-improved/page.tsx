@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { CreditCard, Lock, Truck, Paypal, Loader2 } from "lucide-react"
+import { CreditCard, Lock, Truck, Loader2 } from "lucide-react"
 import { useCart } from "@/components/cart-provider"
 import { router } from "@inertiajs/react"
 
