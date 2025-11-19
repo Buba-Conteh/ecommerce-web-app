@@ -162,7 +162,9 @@ export function Header({ wishlistCount = 0 }: HeaderProps) {
         </div>
       </header>
 
-      <CartModal isOpen={isCartModalOpen} onClose={() => setIsCartModalOpen(false)} />
+      {isCartModalOpen && (
+        <CartModal isOpen={isCartModalOpen} onClose={() => setIsCartModalOpen(false)} />
+      )}
     </>
   )
 }

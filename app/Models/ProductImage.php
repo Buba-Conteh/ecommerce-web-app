@@ -43,9 +43,21 @@ class ProductImage extends Model
 
     /**
      * Get the full URL for the image
+     * If image_path is a Cloudinary URL (starts with http), return as-is
+     * Otherwise, treat as local storage path
      */
     public function getUrlAttribute()
     {
-        return $this->image_path ? asset('storage/' . $this->image_path) : null;
+        if (!$this->image_path) {
+            return null;
+        }
+        
+        // If it's already a full URL (Cloudinary), return as-is
+        if (filter_var($this->image_path, FILTER_VALIDATE_URL)) {
+            return $this->image_path;
+        }
+        
+        // Otherwise, treat as local storage path
+        return asset('storage/' . $this->image_path);
     }
 }

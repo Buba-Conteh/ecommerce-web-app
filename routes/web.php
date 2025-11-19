@@ -92,7 +92,46 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // Admin routes
 Route::prefix('/admin')->middleware(['auth'])->group(function () {
+    // Dashboard
+    Route::get('/', function () {
+        return Inertia::render('admin/dashboard/page');
+    })->name('admin.dashboard');
+    
+    // Products routes
     Route::get('/products/create', [AdminProductController::class, 'create'])->name('admin.products.create');
+    Route::controller(AdminProductController::class)->group(function () {
+        Route::get('/products', 'index')->name('admin.products');
+        Route::get('/products/{product}/edit', 'edit')->name('admin.products.edit');
+        Route::get('/products/{product}', 'show')->name('admin.products.view');
+        Route::put('/products/{product}', 'update')->name('admin.products.update');
+        Route::delete('/products/{product}', 'delete')->name('admin.products.delete');
+        Route::post('/products/{product}/restore', 'restore')->name('admin.products.restore');
+    });
+    
+    // Inventory
+    Route::get('/inventory', function () {
+        return Inertia::render('admin/products/page'); // Use products page for now
+    })->name('admin.inventory');
+    
+    // Customers
+    Route::get('/customers', function () {
+        return Inertia::render('admin/customers/page');
+    })->name('admin.customers');
+    
+    // Orders
+    Route::get('/orders', function () {
+        return Inertia::render('orders/page');
+    })->name('admin.orders');
+    
+    // Analytics
+    Route::get('/analytics', function () {
+        return Inertia::render('admin/analytics/page');
+    })->name('admin.analytics');
+    
+    // Settings
+    Route::get('/settings', function () {
+        return Inertia::render('admin/settings/page');
+    })->name('admin.settings');
 });
 
 // Admin API routes

@@ -2,41 +2,19 @@
 
 namespace App\Models;
 
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Log;
 
 class Product extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'name',
-        'slug',
-        'description',
-        'short_description',
-        'price',
-        'compare_price',
-        'cost_price',
-        'sku',
-        'barcode',
-        'stock_quantity',
-        'min_stock_quantity',
-        'track_stock',
-        'is_active',
-        'is_featured',
-        'weight',
-        'length',
-        'width',
-        'height',
-        'meta_title',
-        'meta_description',
-        'meta_keywords',
-        'category_id',
-        'brand_id',
-    ];
+    protected $guarded = [];
 
     protected $casts = [
         'price' => 'decimal:2',
@@ -51,6 +29,9 @@ class Product extends Model
         'length' => 'decimal:2',
         'width' => 'decimal:2',
         'height' => 'decimal:2',
+        'sizes' => 'array',
+        'colors' => 'array',
+        'features' => 'array',
     ];
 
     public function category(): BelongsTo
@@ -118,4 +99,46 @@ class Product extends Model
         }
         return $this->stock_quantity <= $this->min_stock_quantity;
     }
+
+    public function saveImages(array $productImages): bool
+    {
+        foreach ($productImages as $index => $img) {
+            try {
+                // Ensure we have a file
+                if (!isset($img['file']) || !$img['file']) {
+                    continue;
+                }
+
+                // Upload to Cloudinary - get the real path from the uploaded file
+                $file = $img['file'];
+                $uploadedFileUrl = Cloudinary::upload(
+                    $file->getRealPath(),
+                    [
+                        'folder' => 'shopma-products',
+                        'public_id' => 'product_' . $this->id . '_' . time() . '_' . $index,
+                    ]
+                )->getSecurePath();
+
+                // Save Cloudinary URL to database
+                $this->images()->create([
+                    'image_path' => $uploadedFileUrl, // Store Cloudinary URL directly
+                    'is_primary' => isset($img['is_primary']) && ($img['is_primary'] === true || $img['is_primary'] === '1' || $img['is_primary'] === 1),
+                    'alt_text' => $img['alt_text'] ?? $this->name ?? null,
+                    'sort_order' => isset($img['sort_order']) ? (int)$img['sort_order'] : $index,
+                ]);
+            } catch (\Exception $e) {
+                // Log error and continue with next image
+                Log::error('Failed to upload image to Cloudinary: ' . $e->getMessage(), [
+                    'product_id' => $this->id,
+                    'image_index' => $index,
+                    'error' => $e->getMessage(),
+                ]);
+                continue;
+            }
+        }
+
+        return true;
+    }
+ 
 }
+

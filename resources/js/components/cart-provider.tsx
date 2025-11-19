@@ -175,7 +175,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
 export function useCart() {
   const context = useContext(CartContext)
   if (!context) {
-    throw new Error("useCart must be used within a CartProvider")
+    // Return a safe default instead of throwing for better resilience
+    // This allows Header to work even if not wrapped in CartProvider
+    return {
+      state: { items: [], total: 0, itemCount: 0 },
+      dispatch: () => {},
+      addToCart: () => {},
+      removeFromCart: () => {},
+      updateQuantity: () => {},
+      clearCart: () => {},
+    }
   }
   return context
 }

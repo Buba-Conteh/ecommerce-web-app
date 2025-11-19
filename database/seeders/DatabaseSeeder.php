@@ -21,11 +21,11 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             BrandSeeder::class,
             TagSeeder::class,
-            ProductSeeder::class,
+            // ProductSeeder::class,
             CustomerSeeder::class,
-            AddressSeeder::class,
-            CartSeeder::class,
-            OrderSeeder::class,
+            // AddressSeeder::class,
+            // CartSeeder::class,
+            // OrderSeeder::class,
         ]);
 
         // DB::statement('SET FOREIGN_KEY_CHECKS=1;');
