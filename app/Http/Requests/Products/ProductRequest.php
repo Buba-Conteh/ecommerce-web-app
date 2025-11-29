@@ -7,6 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use phpDocumentor\Reflection\Types\Boolean;
+use Illuminate\Contracts\Validation\Validator;
 
 class ProductRequest extends FormRequest
 {
@@ -17,6 +18,18 @@ class ProductRequest extends FormRequest
     {
         return true;
     }
+
+    // /**
+    //  * Handle a failed validation attempt.
+    //  */
+    // protected function failedValidation(Validator $validator)
+    // {
+    //     // Return JSON response for API requests
+    //     throw new \Illuminate\Validation\ValidationException($validator, response()->json(
+    //         $validator->errors(),
+    //         422
+    //     ));
+    // }
 
     /**
      * Get the validation rules that apply to the request.
@@ -53,7 +66,7 @@ class ProductRequest extends FormRequest
             'origin' => ['nullable', 'string', 'max:255'],
             'fit' => ['nullable', 'string', 'max:255'],
             'care_instructions' => ['nullable', 'string'],
-            'category_id' => ['nullable', 'exists:categories,id'],
+            'category_id' => ['required', 'exists:categories,id'],
             'brand_id' => ['nullable', 'exists:brands,id'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['exists:tags,id'],
@@ -88,7 +101,7 @@ class ProductRequest extends FormRequest
         $product->height = $this->height ?? null;
         $product->sizes = $this->sizes ?? null;
         $product->colors = $this->colors ?? null;
-        $product->features = $this->features ?? null;
+        $product->features = $this->features ?? true;
         $product->material = $this->material ?? null;
         $product->origin = $this->origin ?? null;
         $product->fit = $this->fit ?? null;

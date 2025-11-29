@@ -22,7 +22,7 @@ const dashboardData = {
 export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      {/* <Header /> */}
       
       <div className="flex">
         <AdminSidebar />

@@ -93,14 +93,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // Admin routes
 Route::prefix('/admin')->middleware(['auth'])->group(function () {
     // Dashboard
-    Route::get('/', function () {
+    Route::get('/dashboard', function () {
         return Inertia::render('admin/dashboard/page');
     })->name('admin.dashboard');
     
     // Products routes
     Route::get('/products/create', [AdminProductController::class, 'create'])->name('admin.products.create');
+
     Route::controller(AdminProductController::class)->group(function () {
         Route::get('/products', 'index')->name('admin.products');
+         Route::post('/products', 'store')->name('admin.products.store');
         Route::get('/products/{product}/edit', 'edit')->name('admin.products.edit');
         Route::get('/products/{product}', 'show')->name('admin.products.view');
         Route::put('/products/{product}', 'update')->name('admin.products.update');
@@ -157,3 +159,7 @@ Route::get('/paypal/cancel', [PayPalController::class, 'cancel'])->name('paypal.
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
+// Include debug routes (optional) — enables /debug/* endpoints for testing Cloudinary
+if (file_exists(__DIR__.'/debug.php')) {
+    require __DIR__.'/debug.php';
+}

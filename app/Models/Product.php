@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Services\CloudinaryService;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -106,32 +108,46 @@ class Product extends Model
             try {
                 // Ensure we have a file
                 if (!isset($img['file']) || !$img['file']) {
+                    Log::warning('Image file missing at index ' . $index);
                     continue;
                 }
 
-                // Upload to Cloudinary - get the real path from the uploaded file
                 $file = $img['file'];
-                $uploadedFileUrl = Cloudinary::upload(
-                    $file->getRealPath(),
-                    [
-                        'folder' => 'shopma-products',
-                        'public_id' => 'product_' . $this->id . '_' . time() . '_' . $index,
-                    ]
-                )->getSecurePath();
 
-                // Save Cloudinary URL to database
-                $this->images()->create([
-                    'image_path' => $uploadedFileUrl, // Store Cloudinary URL directly
+                // Store file locally in storage/app/public/shopma-products
+                $storedPath = $file->store('shopma-products', 'public');
+
+                if (!$storedPath) {
+                    Log::warning('Failed to store uploaded file locally', [
+                        'product_id' => $this->id,
+                        'image_index' => $index,
+                        'file_name' => method_exists($file, 'getClientOriginalName') ? $file->getClientOriginalName() : null,
+                    ]);
+                    continue;
+                }
+
+                // Save the relative path (e.g. shopma-products/xyz.jpg) to DB.
+                // ProductImage::getUrlAttribute will convert this to an accessible URL.
+                $createdImage = $this->images()->create([
+                    'image_path' => $storedPath,
                     'is_primary' => isset($img['is_primary']) && ($img['is_primary'] === true || $img['is_primary'] === '1' || $img['is_primary'] === 1),
                     'alt_text' => $img['alt_text'] ?? $this->name ?? null,
                     'sort_order' => isset($img['sort_order']) ? (int)$img['sort_order'] : $index,
                 ]);
+
+                Log::info('ProductImage stored locally and DB record created', [
+                    'product_id' => $this->id,
+                    'image_id' => $createdImage->id,
+                    'image_path' => $createdImage->image_path,
+                    'public_url' => Storage::url($storedPath),
+                ]);
+
             } catch (\Exception $e) {
-                // Log error and continue with next image
-                Log::error('Failed to upload image to Cloudinary: ' . $e->getMessage(), [
+                Log::error('Failed to save image for product: ' . $e->getMessage(), [
                     'product_id' => $this->id,
                     'image_index' => $index,
                     'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
                 ]);
                 continue;
             }

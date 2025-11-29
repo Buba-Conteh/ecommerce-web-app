@@ -94,6 +94,11 @@ export default function ProductForm({
     submitLabel = 'Create Product',
     submitUrl = '/api/admin/products',
 }: ProductFormProps) {
+    // Ensure array initial values are computed before using in state initializer
+    const initialSizes = Array.isArray(initialData?.sizes) ? initialData.sizes : [];
+    const initialColors = Array.isArray(initialData?.colors) ? initialData.colors : [];
+    const initialFeatures = Array.isArray(initialData?.features) ? initialData.features : [];
+
     const [formData, setFormData] = useState<ProductFormData>({
         name: initialData?.name ?? '',
         description: initialData?.description ?? '',
@@ -130,10 +135,6 @@ export default function ProductForm({
     const [loading, setLoading] = useState(false);
     const [currentFeature, setCurrentFeature] = useState("");
     
-    // Handle array fields - ensure they're arrays
-    const initialSizes = Array.isArray(initialData?.sizes) ? initialData.sizes : [];
-    const initialColors = Array.isArray(initialData?.colors) ? initialData.colors : [];
-    const initialFeatures = Array.isArray(initialData?.features) ? initialData.features : [];
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -348,40 +349,70 @@ export default function ProductForm({
                         <CardTitle>Basic Information</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div>
-                            <Label htmlFor="name">Product Name *</Label>
-                            <Input
-                                id="name"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleInputChange}
-                                placeholder="Enter product name"
-                                required
-                            />
-                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                            {/* Left column: primary image preview + file input */}
+                            <div className="md:col-span-1">
+                                <Label>Primary Image</Label>
+                                <div className="mt-2">
+                                    <div className="aspect-square w-full overflow-hidden rounded-md border border-border bg-muted flex items-center justify-center">
+                                        <img
+                                            src={
+                                                '/'+images[0]?.image_path || images[0]?.url || '/placeholder.svg'
+                                            }
+                                            alt={images[0]?.alt_text || 'Primary'}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    </div>
+                                    <div className="mt-3">
+                                        <Input
+                                            id="primary_image"
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                        />
+                                        <p className="mt-2 text-sm text-muted-foreground">Upload a primary image for the product. You can still add more images in the Images section below.</p>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <div>
-                            <Label htmlFor="short_description">Short Description</Label>
-                            <Textarea
-                                id="short_description"
-                                name="short_description"
-                                value={formData.short_description}
-                                onChange={handleInputChange}
-                                placeholder="Brief description for listings"
-                                rows={3}
-                            />
-                        </div>
+                            {/* Right column: the text inputs */}
+                            <div className="md:col-span-2 space-y-4">
+                                <div>
+                                    <Label htmlFor="name">Product Name *</Label>
+                                    <Input
+                                        id="name"
+                                        name="name"
+                                        value={formData.name}
+                                        onChange={handleInputChange}
+                                        placeholder="Enter product name"
+                                        required
+                                    />
+                                </div>
 
-                        <div>
-                            <Label htmlFor="description">Full Description</Label>
-                            <Textarea
-                                id="description"
-                                name="description"
-                                value={formData.description}
-                                onChange={handleInputChange}
-                                placeholder="Detailed product description"
-                                rows={6}
-                            />
+                                <div>
+                                    <Label htmlFor="short_description">Short Description</Label>
+                                    <Textarea
+                                        id="short_description"
+                                        name="short_description"
+                                        value={formData.short_description}
+                                        onChange={handleInputChange}
+                                        placeholder="Brief description for listings"
+                                        rows={3}
+                                    />
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="description">Full Description</Label>
+                                    <Textarea
+                                        id="description"
+                                        name="description"
+                                        value={formData.description}
+                                        onChange={handleInputChange}
+                                        placeholder="Detailed product description"
+                                        rows={6}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -594,7 +625,7 @@ export default function ProductForm({
                                     <div key={index} className="group relative">
                                         <div className="aspect-square overflow-hidden rounded-lg border-2 border-border">
                                             <img
-                                                src={image.preview || image.image_path || image.url || '/placeholder.svg'}
+                                                src={image.preview || '/'+image.image_path || image.url || '/placeholder.svg'}
                                                 alt={`Product ${index + 1}`}
                                                 className="h-full w-full object-cover"
                                             />

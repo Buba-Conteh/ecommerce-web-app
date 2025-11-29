@@ -63,7 +63,7 @@ function CustomersPageContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      {/* <Header /> */}
 
       <div className="flex">
         <AdminSidebar />

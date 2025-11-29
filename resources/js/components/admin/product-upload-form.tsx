@@ -1,428 +1,378 @@
-"use client"
+'use client'
 
-import type React from "react"
-
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Card } from "@/components/ui/card"
-import { X, Upload, Plus, Check } from "lucide-react"
+import { useState } from 'react'
+import { useForm, usePage } from '@inertiajs/react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Check } from 'lucide-react'
+import { FormError } from './form/form-error'
+import { FormInput } from './form/form-input'
+import { FormTextarea } from './form/form-textarea'
+import { FormSelect } from './form/form-select'
+import { FormBadgeSelect } from './form/form-badge-select'
+import { FormImageUpload } from './form/form-image-upload'
+import { FormFeatures } from './form/form-features'
 
 interface ProductFormData {
   name: string
   price: string
-  originalPrice: string
-  category: string
-  brand: string
+  compare_price: string
+  category_id: string
+  brand_id: string
   description: string
   material: string
-  careInstructions: string
+  care_instructions: string
   origin: string
   fit: string
   sizes: string[]
   colors: string[]
   features: string[]
-  images: File[]
+  images: Array<{ file: File; is_primary: number }>
+  is_active?: number
+  track_stock?: number
 }
 
-const CATEGORIES = ["dresses", "sweaters", "accessories", "jewelry", "outerwear", "pants", "shoes", "bags"]
-const AVAILABLE_SIZES = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL"]
-const AVAILABLE_COLORS = ["Black", "White", "Navy", "Burgundy", "Cream", "Camel", "Charcoal", "Beige", "Gray", "Brown"]
+const AVAILABLE_SIZES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
+const AVAILABLE_COLORS = ['Black', 'White', 'Navy', 'Burgundy', 'Cream', 'Camel', 'Charcoal', 'Beige', 'Gray', 'Brown']
+
+interface CategoryItem {
+  id: number | string
+  name: string
+}
+
+interface BrandItem {
+  id: number | string
+  name: string
+}
 
 export function ProductUploadForm() {
-  const [formData, setFormData] = useState<ProductFormData>({
-    name: "",
-    price: "",
-    originalPrice: "",
-    category: "",
-    brand: "",
-    description: "",
-    material: "",
-    careInstructions: "",
-    origin: "",
-    fit: "",
+  const page = usePage<{
+    categories?: CategoryItem[]
+    brands?: BrandItem[]
+  }>()
+  const form = useForm<ProductFormData>({
+    name: '',
+    price: '',
+    compare_price: '',
+    category_id: '',
+    brand_id: '',
+    description: '',
+    material: '',
+    care_instructions: '',
+    origin: '',
+    fit: '',
     sizes: [],
     colors: [],
     features: [],
     images: [],
+    is_active: 1,
+    track_stock: 1,
   })
 
-  const [currentFeature, setCurrentFeature] = useState("")
+  const [currentFeature, setCurrentFeature] = useState('')
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  const [generalError, setGeneralError] = useState<string | null>(null)
 
-  const handleInputChange = (field: keyof ProductFormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+  const categories = page.props.categories || []
+  const brands = page.props.brands || []
+
+  const handleInputChange = (field: keyof ProductFormData, value: any) => {
+    form.setData(field as any, value)
+    // Clear error for this field when user starts typing
+    form.clearErrors(field as any)
   }
 
   const handleSizeToggle = (size: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      sizes: prev.sizes.includes(size) ? prev.sizes.filter((s) => s !== size) : [...prev.sizes, size],
-    }))
+    const next = form.data.sizes.includes(size) ? form.data.sizes.filter((s) => s !== size) : [...form.data.sizes, size]
+    form.setData('sizes', next)
+    form.clearErrors('sizes')
   }
 
   const handleColorToggle = (color: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      colors: prev.colors.includes(color) ? prev.colors.filter((c) => c !== color) : [...prev.colors, color],
-    }))
+    const next = form.data.colors.includes(color) ? form.data.colors.filter((c) => c !== color) : [...form.data.colors, color]
+    form.setData('colors', next)
+    form.clearErrors('colors')
   }
 
   const handleAddFeature = () => {
     if (currentFeature.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        features: [...prev.features, currentFeature.trim()],
-      }))
-      setCurrentFeature("")
+      form.setData('features', [...form.data.features, currentFeature.trim()])
+      setCurrentFeature('')
+      form.clearErrors('features')
     }
   }
 
   const handleRemoveFeature = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      features: prev.features.filter((_, i) => i !== index),
-    }))
+    form.setData('features', form.data.features.filter((_, i) => i !== index))
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    if (files.length > 0) {
-      setFormData((prev) => ({
-        ...prev,
-        images: [...prev.images, ...files],
-      }))
+    if (files.length === 0) return
 
-      // Create preview URLs
-      files.forEach((file) => {
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          setImagePreviews((prev) => [...prev, reader.result as string])
-        }
-        reader.readAsDataURL(file)
-      })
-    }
+    const nextImages = [...form.data.images]
+    files.forEach((file, i) => {
+      const isPrimary = nextImages.length === 0 && i === 0 ? 1 : 0
+      nextImages.push({ file, is_primary: isPrimary })
+
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreviews((prev) => [...prev, reader.result as string])
+      }
+      reader.readAsDataURL(file)
+    })
+
+    form.setData('images', nextImages)
+    form.clearErrors('images')
   }
 
   const handleRemoveImage = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index),
-    }))
+    form.setData('images', form.data.images.filter((_, i) => i !== index))
     setImagePreviews((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
+    setGeneralError(null)
 
-    try {
-      // TODO: Replace with actual Laravel API call
-      // Create FormData for file upload
-      const submitData = new FormData()
-      submitData.append("name", formData.name)
-      submitData.append("price", formData.price)
-      submitData.append("original_price", formData.originalPrice)
-      submitData.append("category", formData.category)
-      submitData.append("brand", formData.brand)
-      submitData.append("description", formData.description)
-      submitData.append("material", formData.material)
-      submitData.append("care_instructions", formData.careInstructions)
-      submitData.append("origin", formData.origin)
-      submitData.append("fit", formData.fit)
-      submitData.append("sizes", JSON.stringify(formData.sizes))
-      submitData.append("colors", JSON.stringify(formData.colors))
-      submitData.append("features", JSON.stringify(formData.features))
-
-      formData.images.forEach((image, index) => {
-        submitData.append(`images[${index}]`, image)
-      })
-
-      // TODO: Send to Laravel backend
-      // const response = await fetch('/api/admin/products', {
-      //   method: 'POST',
-      //   body: submitData,
-      // })
-      // const result = await response.json()
-
-      console.log("[v0] Product upload data:", formData)
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      setSubmitSuccess(true)
-      setTimeout(() => {
-        setSubmitSuccess(false)
-        // Reset form
-        setFormData({
-          name: "",
-          price: "",
-          originalPrice: "",
-          category: "",
-          brand: "",
-          description: "",
-          material: "",
-          careInstructions: "",
-          origin: "",
-          fit: "",
-          sizes: [],
-          colors: [],
-          features: [],
-          images: [],
-        })
+    form.post('/admin/products', {
+      preserveState: true,
+      preserveScroll: true,
+      onSuccess: () => {
+        setSubmitSuccess(true)
+        form.reset()
         setImagePreviews([])
-      }, 2000)
-    } catch (error) {
-      console.error("Failed to upload product:", error)
-    } finally {
-      setIsSubmitting(false)
-    }
+        setCurrentFeature('')
+        setTimeout(() => setSubmitSuccess(false), 3000)
+      },
+      onError: (pageErrors: any) => {
+       
+        if (!pageErrors || typeof pageErrors !== 'object') {
+          setGeneralError('An error occurred while submitting the form.')
+        }
+      },
+      onFinish: () => {
+        // nothing needed; processing state is in `form.processing`
+      },
+    })
   }
+
+  const categoryOptions = categories.map((cat) => ({
+    value: String(cat.id),
+    label: cat.name,
+  }))
+
+  const brandOptions = brands.map((brand) => ({
+    value: String(brand.id),
+    label: brand.name,
+  }))
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Global errors */}
+      {generalError && <FormError message={generalError} />}
+      {submitSuccess && (
+        <div className="rounded-md bg-green-50 p-4 border border-green-200">
+          <div className="flex items-center gap-2 text-green-600">
+            <Check className="w-5 h-5" />
+            <span className="font-medium">Product created successfully!</span>
+          </div>
+        </div>
+      )}
+
       {/* Basic Information */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-foreground">Basic Information</h3>
-
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Product Name *</Label>
-            <Input
+      <Card>
+        <CardHeader>
+          <CardTitle>Basic Information</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <FormInput
               id="name"
-              value={formData.name}
-              onChange={(e) => handleInputChange("name", e.target.value)}
+              label="Product Name"
+              value={form.data.name}
+              onChange={(value) => handleInputChange('name', value)}
               placeholder="e.g., Elegant Silk Midi Dress"
-              required
+              error={form.errors.name}
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="brand">Brand *</Label>
-            <Input
+            {/* <FormInput
               id="brand"
-              value={formData.brand}
-              onChange={(e) => handleInputChange("brand", e.target.value)}
+              label="Brand"
+              value={form.data.brand_id}
+              onChange={(value) => handleInputChange('brand_id', value)}
               placeholder="e.g., Luxe Fashion"
-              required
-            />
-          </div>
-        </div>
+              error={form.errors.brand_id}
+            /> */}
 
-        <div className="grid md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="price">Price ($) *</Label>
-            <Input
-              id="price"
-              type="number"
-              step="0.01"
-              value={formData.price}
-              onChange={(e) => handleInputChange("price", e.target.value)}
-              placeholder="299.99"
-              required
+             <FormSelect
+              id="brand"
+              label="Brand"
+              value={form.data.brand_id}
+              onValueChange={(value) => handleInputChange('brand_id', value)}
+              options={brandOptions}
+              placeholder="Select brand"
+              error={form.errors.brand_id}
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="originalPrice">Original Price ($)</Label>
-            <Input
-              id="originalPrice"
-              type="number"
-              step="0.01"
-              value={formData.originalPrice}
-              onChange={(e) => handleInputChange("originalPrice", e.target.value)}
-              placeholder="399.99"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="category">Category *</Label>
-            <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((cat) => (
-                  <SelectItem key={cat} value={cat} className="capitalize">
-                    {cat}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="description">Description *</Label>
-          <Textarea
+          <FormTextarea
             id="description"
-            value={formData.description}
-            onChange={(e) => handleInputChange("description", e.target.value)}
+            label="Description"
+            value={form.data.description}
+            onChange={(value) => handleInputChange('description', value)}
             placeholder="Detailed product description..."
             rows={4}
-            required
+            error={form.errors.description}
           />
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Product Images */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-foreground">Product Images</h3>
+      {/* Pricing & Category */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Pricing & Category</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid md:grid-cols-3 gap-4">
+            <FormInput
+              id="price"
+              label="Price ($)"
+              type="number"
+              step="0.01"
+              value={form.data.price}
+              onChange={(value) => handleInputChange('price', value)}
+              placeholder="299.99"
+              error={form.errors.price}
+            />
 
-        <div className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Label
-              htmlFor="images"
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md cursor-pointer hover:bg-primary/90 transition-colors"
-            >
-              <Upload className="w-4 h-4" />
-              Upload Images
-            </Label>
-            <Input id="images" type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
-            <span className="text-sm text-muted-foreground">{formData.images.length} image(s) selected</span>
+            <FormInput
+              id="compare_price"
+              label="Original Price ($)"
+              type="number"
+              step="0.01"
+              value={form.data.compare_price}
+              onChange={(value) => handleInputChange('compare_price', value)}
+              placeholder="399.99"
+              error={form.errors.compare_price}
+            />
+
+            <FormSelect
+              id="category"
+              label="Category"
+              value={form.data.category_id}
+              onValueChange={(value) => handleInputChange('category_id', value)}
+              options={categoryOptions}
+              placeholder="Select category"
+              error={form.errors.category_id}
+            />
           </div>
-
-          {imagePreviews.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {imagePreviews.map((preview, index) => (
-                <Card key={index} className="relative group">
-                  <img
-                    src={preview || "/placeholder.svg"}
-                    alt={`Preview ${index + 1}`}
-                    className="w-full h-40 object-cover rounded-lg"
-                  />
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="destructive"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleRemoveImage(index)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Specifications */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-foreground">Specifications</h3>
-
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="material">Material</Label>
-            <Input
+      <Card>
+        <CardHeader>
+          <CardTitle>Specifications</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <FormInput
               id="material"
-              value={formData.material}
-              onChange={(e) => handleInputChange("material", e.target.value)}
+              label="Material"
+              value={form.data.material}
+              onChange={(value) => handleInputChange('material', value)}
               placeholder="e.g., 100% Mulberry Silk"
+              error={form.errors.material}
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="origin">Origin</Label>
-            <Input
+            <FormInput
               id="origin"
-              value={formData.origin}
-              onChange={(e) => handleInputChange("origin", e.target.value)}
+              label="Origin"
+              value={form.data.origin}
+              onChange={(value) => handleInputChange('origin', value)}
               placeholder="e.g., Made in Italy"
+              error={form.errors.origin}
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="fit">Fit</Label>
-            <Input
+            <FormInput
               id="fit"
-              value={formData.fit}
-              onChange={(e) => handleInputChange("fit", e.target.value)}
+              label="Fit"
+              value={form.data.fit}
+              onChange={(value) => handleInputChange('fit', value)}
               placeholder="e.g., True to size"
+              error={form.errors.fit}
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="careInstructions">Care Instructions</Label>
-            <Input
-              id="careInstructions"
-              value={formData.careInstructions}
-              onChange={(e) => handleInputChange("careInstructions", e.target.value)}
+            <FormInput
+              id="care_instructions"
+              label="Care Instructions"
+              value={form.data.care_instructions}
+              onChange={(value) => handleInputChange('care_instructions', value)}
               placeholder="e.g., Dry clean only"
+              error={form.errors.care_instructions}
             />
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Sizes */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-foreground">Available Sizes *</h3>
-        <div className="flex flex-wrap gap-2">
-          {AVAILABLE_SIZES.map((size) => (
-            <Badge
-              key={size}
-              variant={formData.sizes.includes(size) ? "default" : "outline"}
-              className="cursor-pointer"
-              onClick={() => handleSizeToggle(size)}
-            >
-              {size}
-            </Badge>
-          ))}
-        </div>
-      </div>
+      {/* Sizes & Colors */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Sizes & Colors</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <FormBadgeSelect
+            label="Available Sizes"
+            items={AVAILABLE_SIZES}
+            selected={form.data.sizes}
+            onToggle={handleSizeToggle}
+            error={form.errors.sizes}
+          />
 
-      {/* Colors */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-foreground">Available Colors *</h3>
-        <div className="flex flex-wrap gap-2">
-          {AVAILABLE_COLORS.map((color) => (
-            <Badge
-              key={color}
-              variant={formData.colors.includes(color) ? "default" : "outline"}
-              className="cursor-pointer"
-              onClick={() => handleColorToggle(color)}
-            >
-              {color}
-            </Badge>
-          ))}
-        </div>
-      </div>
+          <FormBadgeSelect
+            label="Available Colors"
+            items={AVAILABLE_COLORS}
+            selected={form.data.colors}
+            onToggle={handleColorToggle}
+            error={form.errors.colors}
+          />
+        </CardContent>
+      </Card>
 
       {/* Features */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-foreground">Key Features</h3>
-
-        <div className="flex gap-2">
-          <Input
-            value={currentFeature}
-            onChange={(e) => setCurrentFeature(e.target.value)}
-            placeholder="Add a feature..."
-            onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddFeature())}
+      <Card>
+        <CardHeader>
+          <CardTitle>Key Features</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <FormFeatures
+            features={form.data.features}
+            currentFeature={currentFeature}
+            onCurrentFeatureChange={setCurrentFeature}
+            onAddFeature={handleAddFeature}
+            onRemoveFeature={handleRemoveFeature}
+            error={form.errors.features}
           />
-          <Button type="button" onClick={handleAddFeature}>
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
+        </CardContent>
+      </Card>
 
-        {formData.features.length > 0 && (
-          <div className="space-y-2">
-            {formData.features.map((feature, index) => (
-              <div key={index} className="flex items-center justify-between bg-secondary p-3 rounded-md">
-                <span className="text-sm">{feature}</span>
-                <Button type="button" size="icon" variant="ghost" onClick={() => handleRemoveFeature(index)}>
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Images */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Product Images</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <FormImageUpload
+            images={form.data.images}
+            previews={imagePreviews}
+            onImageUpload={handleImageUpload}
+            onRemoveImage={handleRemoveImage}
+            error={form.errors.images}
+          />
+        </CardContent>
+      </Card>
 
       {/* Submit Button */}
       <div className="flex justify-end gap-4">
@@ -430,54 +380,27 @@ export function ProductUploadForm() {
           type="button"
           variant="outline"
           onClick={() => {
-            setFormData({
-              name: "",
-              price: "",
-              originalPrice: "",
-              category: "",
-              brand: "",
-              description: "",
-              material: "",
-              careInstructions: "",
-              origin: "",
-              fit: "",
-              sizes: [],
-              colors: [],
-              features: [],
-              images: [],
-            })
+            form.reset()
             setImagePreviews([])
+            form.clearErrors()
+            setGeneralError(null)
           }}
         >
           Clear Form
         </Button>
-        <Button
-          type="submit"
-          disabled={
-            isSubmitting ||
-            !formData.name ||
-            !formData.price ||
-            !formData.category ||
-            formData.sizes.length === 0 ||
-            formData.colors.length === 0
-          }
-          className={submitSuccess ? "bg-green-600 hover:bg-green-700" : ""}
-        >
-          {isSubmitting ? (
+        <Button type="submit" disabled={form.processing}>
+          {form.processing ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
               Uploading...
             </>
-          ) : submitSuccess ? (
-            <>
-              <Check className="w-4 h-4 mr-2" />
-              Product Uploaded!
-            </>
           ) : (
-            "Upload Product"
+            'Upload Product'
           )}
         </Button>
       </div>
     </form>
   )
 }
+
+export default ProductUploadForm

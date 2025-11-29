@@ -9,13 +9,13 @@ import type { Category, Brand, Tag, ProductFormData } from '@/components/admin/p
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface Product extends ProductFormData {
-    created_at?: string;
-    updated_at?: string;
+    created_at: string;
+    updated_at: string;
     images?: Array<{
         id?: number;
         url?: string;
         image_path?: string;
-        is_primary?: boolean;
+        is_primary: boolean;
         preview?: string;
         alt_text?: string;
     }>;
