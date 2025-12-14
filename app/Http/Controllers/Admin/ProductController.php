@@ -12,7 +12,7 @@ use App\Models\Tag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
-
+use Inertia\Inertia;
 
 class ProductController extends Controller
 {
@@ -62,8 +62,7 @@ class ProductController extends Controller
      * Store a newly created product
      */
     public function store(ProductRequest $productRequest)
-    {
-        // Log incoming uploaded files for debugging
+    {       // Log incoming uploaded files for debugging
         try {
             Log::info('Admin ProductController.store called', [
                 'files' => $productRequest->allFiles(),
@@ -78,6 +77,7 @@ class ProductController extends Controller
         }
         return redirect()->back()->with('error', 'Failed to create product');
     }
+
     public function edit(Product $product)
     {
         $product->load(['category', 'brand', 'tags', 'images']);
@@ -90,28 +90,26 @@ class ProductController extends Controller
         ]);
     }
     
-    public function update(ProductRequest $productRequest)
+     public function update(Product $product, ProductRequest $productRequest)
     {
-        
-                 try {
-            Log::info('Admin ProductController.store called', [
-                'files' => $productRequest->allFiles(),
-                'input_images' => $productRequest->input('images'),
-            ]);
+        try {
+            if ($productRequest->save($product)) {
+                return redirect()->route('admin.products.edit', $product->id)
+                    ->with('success', 'Product updated successfully');
+            }
+            
+            return redirect()->back()->with('error', 'Failed to update product');
         } catch (\Exception $e) {
-            Log::warning('Failed to log product request files', ['error' => $e->getMessage()]);
+            Log::error('Product update failed', [
+                'product_id' => $product->id,
+                'error' => $e->getMessage(),
+            ]);
+            return redirect()->back()->with('error', 'An error occurred while updating the product');
         }
-      
-        if ($productRequest->save()) {
-            return redirect()->route('admin.products')->with('success', 'Product updated successfully');
-        }
-        return redirect()->back()->with('error', 'Failed to update product');
-
     }
+
     public function delete(Product $product)
     {
-
-
         if ($product->delete()) {
             return redirect()->back()->with('success', 'Product deleted successfully');
             # code...

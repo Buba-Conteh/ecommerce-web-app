@@ -10,51 +10,85 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { CreditCard, Lock, ArrowLeft, Truck } from "lucide-react"
-import { Link } from "@inertiajs/react"
+import { Link, router, usePage } from "@inertiajs/react"
 import { useCart } from "@/components/cart-provider"
 import { CartProvider } from "@/components/cart-provider"
 
 function OrderPageContent() {
   const { state, clearCart } = useCart()
+  const { flash } = usePage().props
   
+  const [alert, setAlert] =  useState<Record<string, string | string[]>>({})
   const [isProcessing, setIsProcessing] = useState(false)
   const [orderComplete, setOrderComplete] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string | string[]>>({})
+  const [submitSuccess, setSubmitSuccess] = useState(false)
 
   const [formData, setFormData] = useState({
     email: "",
-    firstName: "",
-    lastName: "",
+    first_name: "",
+    last_name: "",
     address: "",
     city: "",
-    postalCode: "",
+    postal_code: "",
     country: "",
-    cardNumber: "",
-    expiryDate: "",
+    card_number: "",
+    expiry_date: "",
     cvv: "",
-    cardName: "",
+    card_name: "",
   })
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const fieldError = (field: string) => {
+    const snake = field.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+    const message = errors[field] ?? errors[snake]
+    if (Array.isArray(message)) return message[0]
+    return message
+  }
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault()
     setIsProcessing(true)
 
-    // TODO: Integrate with Laravel backend
-    // const response = await fetch('/api/orders', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ ...formData, items, total })
-    // })
+    const taxAmount = Number((state.total || 0) * 0.08)
+    const grandTotal = Number((state.total || 0) + taxAmount)
 
-    // Simulate processing
-    setTimeout(() => {
-      setIsProcessing(false)
-      setOrderComplete(true)
-      clearCart()
-    }, 2000)
+    const payload = {
+      ...formData,
+      items: state.items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color,
+        image: item.image
+      })),
+      subtotal: state.total,
+      tax_amount: taxAmount,
+      total: grandTotal
+    }
+
+    router.post(
+      "/orders",
+      payload as any,
+      {
+        preserveScroll: true,
+        onSuccess: () => {
+          setOrderComplete(true)
+          setSubmitSuccess(true)
+          clearCart()
+          setErrors({})
+        },
+        onError: (errs) => {
+          setErrors(errs)
+        },
+        onFinish: () => setIsProcessing(false)
+      }
+    )
   }
 
   // Check if cart has items
@@ -69,9 +103,13 @@ function OrderPageContent() {
               </svg>
             </div>
             <CardTitle className="text-2xl font-serif text-slate-800">Your Cart is Empty</CardTitle>
-            <CardDescription>Add some items to your cart before proceeding with checkout.</CardDescription>
+            <CardDescription>
+            {submitSuccess && (
+                    <div className="alert">Order created susessfully</div>
+                    )}
+            </CardDescription>
           </CardHeader>
-          <CardFooter className="flex flex-col gap-3">
+          <CardFooter className="flex flex-col gap-3 py-4">
             <Button asChild className="w-full">
               <Link href="/">Continue Shopping</Link>
             </Button>
@@ -109,7 +147,7 @@ function OrderPageContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 to-pink-50">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-20 py-8">
         <div className="mb-6">
           <Button variant="ghost" asChild className="mb-4">
             <Link href="/" className="flex items-center gap-2">
@@ -139,19 +177,27 @@ function OrderPageContent() {
                     <Label htmlFor="firstName">First Name</Label>
                     <Input
                       id="firstName"
-                      value={formData.firstName}
-                      onChange={(e) => handleInputChange("firstName", e.target.value)}
+                      value={formData.first_name}
+                      onChange={(e) => handleInputChange("first_name", e.target.value)}
+                      aria-invalid={!!fieldError("first_name")}
                       required
                     />
+                    {fieldError("first_name") && (
+                      <p className="text-sm text-red-500 mt-1">{fieldError("first_name")}</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="lastName">Last Name</Label>
                     <Input
                       id="lastName"
-                      value={formData.lastName}
-                      onChange={(e) => handleInputChange("lastName", e.target.value)}
+                      value={formData.last_name}
+                      onChange={(e) => handleInputChange("last_name", e.target.value)}
+                      aria-invalid={!!fieldError("last_name")}
                       required
                     />
+                    {fieldError("last_name") && (
+                      <p className="text-sm text-red-500 mt-1">{fieldError("last_name")}</p>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -161,8 +207,12 @@ function OrderPageContent() {
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
+                    aria-invalid={!!fieldError("email")}
                     required
                   />
+                  {fieldError("email") && (
+                    <p className="text-sm text-red-500 mt-1">{fieldError("email")}</p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="address">Address</Label>
@@ -170,8 +220,12 @@ function OrderPageContent() {
                     id="address"
                     value={formData.address}
                     onChange={(e) => handleInputChange("address", e.target.value)}
+                    aria-invalid={!!fieldError("address")}
                     required
                   />
+                  {fieldError("address") && (
+                    <p className="text-sm text-red-500 mt-1">{fieldError("address")}</p>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -180,17 +234,25 @@ function OrderPageContent() {
                       id="city"
                       value={formData.city}
                       onChange={(e) => handleInputChange("city", e.target.value)}
+                      aria-invalid={!!fieldError("city")}
                       required
                     />
+                    {fieldError("city") && (
+                      <p className="text-sm text-red-500 mt-1">{fieldError("city")}</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="postalCode">Postal Code</Label>
                     <Input
                       id="postalCode"
-                      value={formData.postalCode}
-                      onChange={(e) => handleInputChange("postalCode", e.target.value)}
+                      value={formData.postal_code}
+                      onChange={(e) => handleInputChange("postal_code", e.target.value)}
+                      aria-invalid={!!fieldError("postal_code")}
                       required
                     />
+                    {fieldError("postalCode") && (
+                      <p className="text-sm text-red-500 mt-1">{fieldError("postal_code")}</p>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -206,6 +268,9 @@ function OrderPageContent() {
                       <SelectItem value="au">Australia</SelectItem>
                     </SelectContent>
                   </Select>
+                  {fieldError("country") && (
+                    <p className="text-sm text-red-500 mt-1">{fieldError("country")}</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -226,20 +291,28 @@ function OrderPageContent() {
                   <Label htmlFor="cardName">Name on Card</Label>
                   <Input
                     id="cardName"
-                    value={formData.cardName}
-                    onChange={(e) => handleInputChange("cardName", e.target.value)}
+                    value={formData.card_name}
+                    onChange={(e) => handleInputChange("card_name", e.target.value)}
+                    aria-invalid={!!fieldError("card_name")}
                     required
                   />
+                  {fieldError("card_name") && (
+                    <p className="text-sm text-red-500 mt-1">{fieldError("card_name")}</p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="cardNumber">Card Number</Label>
                   <Input
                     id="cardNumber"
                     placeholder="1234 5678 9012 3456"
-                    value={formData.cardNumber}
-                    onChange={(e) => handleInputChange("cardNumber", e.target.value)}
+                    value={formData.card_number}
+                    onChange={(e) => handleInputChange("card_number", e.target.value)}
+                    aria-invalid={!!fieldError("card_number")}
                     required
                   />
+                  {fieldError("card_number") && (
+                    <p className="text-sm text-red-500 mt-1">{fieldError("card_number")}</p>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -247,10 +320,14 @@ function OrderPageContent() {
                     <Input
                       id="expiryDate"
                       placeholder="MM/YY"
-                      value={formData.expiryDate}
-                      onChange={(e) => handleInputChange("expiryDate", e.target.value)}
+                      value={formData.expiry_date}
+                      onChange={(e) => handleInputChange("expiry_date", e.target.value)}
+                      aria-invalid={!!fieldError("expiry_date")}
                       required
                     />
+                    {fieldError("expiry_date") && (
+                      <p className="text-sm text-red-500 mt-1">{fieldError("expiry_date")}</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="cvv">CVV</Label>
@@ -259,8 +336,12 @@ function OrderPageContent() {
                       placeholder="123"
                       value={formData.cvv}
                       onChange={(e) => handleInputChange("cvv", e.target.value)}
+                      aria-invalid={!!fieldError("cvv")}
                       required
                     />
+                    {fieldError("cvv") && (
+                      <p className="text-sm text-red-500 mt-1">{fieldError("cvv")}</p>
+                    )}
                   </div>
                 </div>
               </CardContent>

@@ -70,20 +70,18 @@ export interface ProductFormData {
 }
 
 interface ProductFormProps {
-    onSubmit?: (data: ProductFormData, images: ProductImage[]) => void;
     isLoading?: boolean;
     error?: string | null;
     success?: string | null;
-    initialData?: Partial<ProductFormData> & { images?: ProductImage[] };
+    initialData: Partial<ProductFormData> & { images?: ProductImage[] }; // Required for update
     categories: Category[];
     brands: Brand[];
     tags: Tag[];
     submitLabel?: string;
-    submitUrl?: string; // For Inertia router.post
+    submitUrl: string; // Base URL for PUT request (e.g., /api/admin/products)
 }
 
 export default function ProductForm({
-    onSubmit,
     isLoading = false,
     error,
     success,
@@ -91,14 +89,14 @@ export default function ProductForm({
     categories,
     brands,
     tags: availableTags,
-    submitLabel = 'Create Product',
-    submitUrl = '/api/admin/products',
+    submitLabel = 'Update Product',
+    submitUrl,
 }: ProductFormProps) {
     // Ensure array initial values are computed before using in state initializer
     const initialSizes = Array.isArray(initialData?.sizes) ? initialData.sizes : [];
     const initialColors = Array.isArray(initialData?.colors) ? initialData.colors : [];
     const initialFeatures = Array.isArray(initialData?.features) ? initialData.features : [];
-
+    
     const [formData, setFormData] = useState<ProductFormData>({
         name: initialData?.name ?? '',
         description: initialData?.description ?? '',
@@ -222,103 +220,57 @@ export default function ProductForm({
         setLoading(true);
 
         try {
-            if (onSubmit) {
-                // Use custom handler
-                onSubmit(formData, images);
-            } else if (submitUrl) {
-                // Use Inertia router
-                const submitData = new FormData();
-
-                Object.keys(formData).forEach((key) => {
-                    const value = formData[key as keyof typeof formData];
-                    if (key === 'tags') {
-                        const tagsArray = value as number[];
-                        tagsArray.forEach((tagId) => {
-                            submitData.append('tags[]', tagId.toString());
-                        });
-                    } else if (key === 'sizes' || key === 'colors' || key === 'features') {
-                        // Handle JSON array fields
-                        const arrayValue = value as string[] | undefined;
-                        if (arrayValue && arrayValue.length > 0) {
-                            arrayValue.forEach((item) => {
-                                submitData.append(`${key}[]`, item);
-                            });
-                        }
-                    } else if (value !== null && value !== undefined && value !== '') {
-                        submitData.append(key, value.toString());
-                    }
-                });
-
-                images.forEach((image, index) => {
-                    if (image.file) {
-                        submitData.append(`images[${index}][file]`, image.file);
-                        submitData.append(`images[${index}][is_primary]`, image.is_primary ? '1' : '0');
-                        submitData.append(`images[${index}][alt_text]`, image.alt_text ?? '');
-                    }
-                });
-
-                // For updates, use PUT method with product ID
-                if (formData.id) {
-                    router.put(`${submitUrl}/${formData.id}`, submitData, {
-                        preserveState: true,
-                        preserveScroll: true,
-                        onSuccess: () => {
-                            setLocalSuccess('Product updated successfully!');
-                            setLoading(false);
-                        },
-                        onError: (errors) => {
-                            setLocalError(Object.values(errors).flat().join(', ') || 'Failed to update product');
-                            setLoading(false);
-                        },
-                    });
-                } else {
-                    router.post(submitUrl, submitData, {
-                        preserveState: true,
-                        preserveScroll: true,
-                        onSuccess: () => {
-                            setLocalSuccess('Product created successfully!');
-                            setLoading(false);
-                            // Reset form after successful creation
-                            setFormData({
-                                name: '',
-                                description: '',
-                                short_description: '',
-                                price: '',
-                                compare_price: '',
-                                cost_price: '',
-                                sku: '',
-                                barcode: '',
-                                stock_quantity: '',
-                                min_stock_quantity: '5',
-                                track_stock: true,
-                                is_active: true,
-                                is_featured: false,
-                                weight: '',
-                                length: '',
-                                width: '',
-                                height: '',
-                                category_id: '',
-                                brand_id: '',
-                                tags: [],
-                                sizes: [],
-                                colors: [],
-                                features: [],
-                                material: '',
-                                origin: '',
-                                fit: '',
-                                care_instructions: '',
-                            });
-                            setImages([]);
-                            setCurrentFeature('');
-                        },
-                        onError: (errors) => {
-                            setLocalError(Object.values(errors).flat().join(', ') || 'Failed to create product');
-                            setLoading(false);
-                        },
-                    });
-                }
-
+            const productId = initialData?.id;
+            if (!productId) {
+                setLocalError('Product ID is required for update');
+                setLoading(false);
+                return;
             }
+
+            const submitData = new FormData();
+
+            Object.keys(formData).forEach((key) => {
+                const value = formData[key as keyof typeof formData];
+                if (key === 'tags') {
+                    const tagsArray = value as number[];
+                    tagsArray.forEach((tagId) => {
+                        submitData.append('tags[]', tagId.toString());
+                    });
+                } else if (key === 'sizes' || key === 'colors' || key === 'features') {
+                    const arrayValue = value as string[] | undefined;
+                    if (arrayValue && arrayValue.length > 0) {
+                        arrayValue.forEach((item) => {
+                            submitData.append(`${key}[]`, item);
+                        });
+                    }
+                } else if (value !== null && value !== undefined && value !== '') {
+                    submitData.append(key, value.toString());
+                }
+            });
+
+            images.forEach((image, index) => {
+                if (image.file) {
+                    submitData.append(`images[${index}][file]`, image.file);
+                    submitData.append(`images[${index}][is_primary]`, image.is_primary ? '1' : '0');
+                    submitData.append(`images[${index}][alt_text]`, image.alt_text ?? '');
+                }
+            });
+
+            // Add _method for Laravel to recognize PUT with FormData
+            submitData.append('_method', 'PUT');
+
+            router.post(`${submitUrl}/${productId}`, submitData, {
+                preserveState: true,
+                preserveScroll: true,
+                onSuccess: () => {
+                    setLocalSuccess('Product updated successfully!');
+                    setLoading(false);
+                },
+                onError: (errors) => {
+                    setLocalError(Object.values(errors).flat().join(', ') || 'Failed to update product');
+                    setLoading(false);
+                },
+            });
         } catch (err) {
             setLocalError(err instanceof Error ? err.message : 'An error occurred');
             setLoading(false);
@@ -932,7 +884,6 @@ export default function ProductForm({
                     </CardContent>
                 </Card>
 
-                {/* Submit Button */}
                 <div className="flex justify-end gap-4">
                     <Button type="button" variant="outline">
                         Cancel
@@ -942,6 +893,7 @@ export default function ProductForm({
                             <>
                                 <Save className="mr-2 h-4 w-4" />
                                 {submitLabel}
+                                
                             </>
                         )}
                     </Button>

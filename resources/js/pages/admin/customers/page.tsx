@@ -11,53 +11,73 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Search, Mail, Phone, MapPin, Star } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { usePage } from "@inertiajs/react"
 
 // Mock customer data
-const mockCustomers = [
-  {
-    id: "1",
-    name: "Sarah Johnson",
-    email: "sarah.j@email.com",
-    phone: "+1 234 567 8900",
-    location: "New York, USA",
-    totalSpent: 2345.67,
-    orders: 12,
-    segment: "VIP",
-    loyaltyPoints: 2340,
-    lastPurchase: "2024-01-15",
-  },
-  {
-    id: "2",
-    name: "Emily Chen",
-    email: "emily.c@email.com",
-    phone: "+1 234 567 8901",
-    location: "Los Angeles, USA",
-    totalSpent: 1234.50,
-    orders: 8,
-    segment: "Regular",
-    loyaltyPoints: 1230,
-    lastPurchase: "2024-01-20",
-  },
-  {
-    id: "3",
-    name: "Michael Brown",
-    email: "michael.b@email.com",
-    phone: "+1 234 567 8902",
-    location: "Chicago, USA",
-    totalSpent: 567.89,
-    orders: 4,
-    segment: "New",
-    loyaltyPoints: 560,
-    lastPurchase: "2024-01-18",
-  },
-]
+// const mockCustomers = [
+//   {
+//     id: "1",
+//     name: "Sarah Johnson",
+//     email: "sarah.j@email.com",
+//     phone: "+1 234 567 8900",
+//     location: "New York, USA",
+//     totalSpent: 2345.67,
+//     orders: 12,
+//     segment: "VIP",
+//     loyaltyPoints: 2340,
+//     lastPurchase: "2024-01-15",
+//   },
+//   {
+//     id: "2",
+//     name: "Emily Chen",
+//     email: "emily.c@email.com",
+//     phone: "+1 234 567 8901",
+//     location: "Los Angeles, USA",
+//     totalSpent: 1234.50,
+//     orders: 8,
+//     segment: "Regular",
+//     loyaltyPoints: 1230,
+//     lastPurchase: "2024-01-20",
+//   },
+//   {
+//     id: "3",
+//     name: "Michael Brown",
+//     email: "michael.b@email.com",
+//     phone: "+1 234 567 8902",
+//     location: "Chicago, USA",
+//     totalSpent: 567.89,
+//     orders: 4,
+//     segment: "New",
+//     loyaltyPoints: 560,
+//     lastPurchase: "2024-01-18",
+//   },
+// ]
+interface CustomersPageProps {
+  customers?: {
+    data: any[]
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+  } | any[]
+  [key: string]: any
+}
+
+
 
 function CustomersPageContent() {
   const [searchQuery, setSearchQuery] = useState("")
+  const page = usePage<CustomersPageProps>()
+  const customersData = page.props.customers
+  const customers = Array.isArray(customersData) 
+    ? customersData 
+    : customersData?.data || []
 
-  const filteredCustomers = mockCustomers.filter(
+  console.log(customers);
+  
+  const filteredCustomers = customers.filter(
     (customer) =>
-      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       customer.email.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
@@ -113,7 +133,7 @@ function CustomersPageContent() {
                         <TableHead>Segment</TableHead>
                         <TableHead className="text-right">Orders</TableHead>
                         <TableHead className="text-right">Total Spent</TableHead>
-                        <TableHead className="text-right">Loyalty Points</TableHead>
+                        {/* <TableHead className="text-right">Loyalty Points</TableHead> */}
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -122,7 +142,7 @@ function CustomersPageContent() {
                         <TableRow key={customer.id}>
                           <TableCell>
                             <div>
-                              <p className="font-medium">{customer.name}</p>
+                              <p className="font-medium">{customer.first_name} {customer.last_name}</p>
                               <p className="text-sm text-muted-foreground flex items-center gap-1">
                                 <MapPin className="w-3 h-3" />
                                 {customer.location}
@@ -150,8 +170,9 @@ function CustomersPageContent() {
                               {customer.segment}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right">{customer.orders}</TableCell>
-                          <TableCell className="text-right font-medium">${customer.totalSpent.toLocaleString()}</TableCell>
+                          {/* <TableCell className="text-right">{customer.orders}</TableCell> */}
+                          <TableCell className="text-right font-medium">{customer.orders_count.toLocaleString()}</TableCell>
+                          <TableCell className="text-right font-medium">${customer?.totalSpent?.toLocaleString() || 0}</TableCell>
                           <TableCell className="text-right">{customer.loyaltyPoints}</TableCell>
                           <TableCell className="text-right">
                             <Button size="sm" variant="outline">

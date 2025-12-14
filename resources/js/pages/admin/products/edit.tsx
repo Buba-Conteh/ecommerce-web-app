@@ -48,7 +48,7 @@ function EditProductContent() {
                                 tags={tags || []}
                                 initialData={product}
                                 submitLabel="Update Product"
-                                submitUrl="/api/admin/products"
+                                submitUrl="/admin/products"
                             />
                         </CardContent>
                     </Card>

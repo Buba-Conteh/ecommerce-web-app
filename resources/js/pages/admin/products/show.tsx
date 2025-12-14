@@ -147,7 +147,6 @@ function ProductViewContent() {
                 <div className="grid gap-4 md:grid-cols-3">
                     {/* Main Details */}
                     <div className="md:col-span-2 space-y-4">
-                        {/* Product Images */}
                         {p.images && p.images.length > 0 && (
                             <Card>
                                 <CardHeader>
@@ -408,6 +407,7 @@ function ProductViewContent() {
                             </CardContent>
                         </Card>
                     </div>
+                </div>
                 </main>
             </div>
         </div>

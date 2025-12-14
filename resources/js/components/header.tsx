@@ -45,8 +45,8 @@ export function Header({ wishlistCount = 0 }: HeaderProps) {
                 <h1 className="font-serif text-2xl font-bold text-primary cursor-pointer">Luxe</h1>
               </Link>
               <nav className="hidden md:flex items-center gap-6">
-                <Link href="/collections" className="text-foreground hover:text-primary transition-colors">
-                  Collections
+                <Link href="/products" className="text-foreground hover:text-primary transition-colors">
+                  Shop
                 </Link>
                 <Link href="/new-arrivals" className="text-foreground hover:text-primary transition-colors">
                   New Arrivals

@@ -125,7 +125,7 @@ export function CartModal({ isOpen, onClose }: CartModalProps) {
               onClick={() => {
                 onClose()
                 // Navigate to orders page - cart data will be available via context
-                router.visit('/orders')
+                router.visit('/checkout')
               }}
             >
               Complete Order

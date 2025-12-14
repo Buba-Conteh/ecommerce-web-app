@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\CastCurrency;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,32 +12,14 @@ class Order extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'order_number',
-        'customer_id',
-        'user_id',
-        'status',
-        'currency',
-        'subtotal',
-        'tax_amount',
-        'shipping_amount',
-        'discount_amount',
-        'total',
-        'notes',
-        'customer_notes',
-        'shipping_method',
-        'payment_method',
-        'tracking_number',
-        'shipped_at',
-        'delivered_at',
-    ];
+    protected $guarded = [];
 
     protected $casts = [
-        'subtotal' => 'decimal:2',
-        'tax_amount' => 'decimal:2',
-        'shipping_amount' => 'decimal:2',
-        'discount_amount' => 'decimal:2',
-        'total' => 'decimal:2',
+        'subtotal' => CastCurrency::class,
+        'tax_amount' => CastCurrency::class,
+        'shipping_amount' => CastCurrency::class,
+        'discount_amount' => CastCurrency::class,
+        'total' => CastCurrency::class,
         'shipped_at' => 'datetime',
         'delivered_at' => 'datetime',
     ];
@@ -59,6 +42,11 @@ class Order extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function shippingAddress(): BelongsTo
+    {
+        return $this->belongsTo(Address::class, 'shipping_address_id');
     }
 
     public function scopeByStatus($query, $status)
@@ -94,5 +82,15 @@ class Order extends Model
     public function getIsDeliveredAttribute()
     {
         return !is_null($this->delivered_at);
+    }
+
+    function createCustomer(Customer $customer) : bool {
+
+         $customer->first_name = $this->first_name;
+         $customer->last_name = $this->last_name; 
+        $customer->email = $this->email;
+        $customer->phone = $this->phone;
+            
+        return $customer->save();
     }
 }

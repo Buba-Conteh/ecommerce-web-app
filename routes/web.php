@@ -1,7 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\ProductsController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\Api\OrderController as ApiOrderController;
+use App\Http\Controllers\OrderReceiptController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PayPalController;
 use App\Models\Order;
@@ -35,43 +40,63 @@ Route::get('/', function () {
 
 // E-commerce routes
 Route::get('/cart', function () {
-    // Get user's cart data
-    $user = \Illuminate\Support\Facades\Auth::user();
-    $cart = null;
-    
-    if ($user) {
-        $cart = \App\Models\Cart::with(['items.product.images', 'items.product.category'])
-            ->where('user_id', $user->id)
-            ->first();
-            
-        if (!$cart) {
-            $cart = \App\Models\Cart::create([
-                'user_id' => $user->id,
-                'total' => 0,
-                'subtotal' => 0,
-                'tax_amount' => 0,
-                'shipping_amount' => 0,
-                'discount_amount' => 0
-            ]);
-        }
-    }
-
-    return Inertia::render('cart/page', [
-        'cart' => $cart
-    ]);
+    // Cart is now managed by CartProvider on the frontend
+    // No need to pass cart data from backend
+    return Inertia::render('cart/page');
 })->name('cart');
 
 Route::get('/orders', function () {
     return Inertia::render('orders/page');
 })->name('orders');
 
+Route::get('/orders/confirmation', function () {
+    $orderId = request()->query('order');
+    $order = null;
+    
+    if ($orderId) {
+        $order = \App\Models\Order::with(['items', 'customer', 'shippingAddress'])
+            ->find($orderId);
+    }
+    
+    return Inertia::render('orders/confirmation', [
+        'order' => $order,
+    ]);
+})->name('orders.confirmation');
+
 Route::get('/checkout', function () {
-    return Inertia::render('checkout/page');
+    $user = Auth::user();
+    $customer = null;
+    $addresses = [];
+    
+    if ($user && $user->customer) {
+        $customer = $user->customer;
+        $addresses = $customer->addresses()->get();
+    }
+    
+    return Inertia::render('checkout/page', [
+        'user' => $user ? [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'customer' => $customer ? [
+                'id' => $customer->id,
+                'first_name' => $customer->first_name,
+                'last_name' => $customer->last_name,
+                'email' => $customer->email,
+                'phone' => $customer->phone,
+                'addresses' => $addresses,
+            ] : null,
+        ] : null,
+    ]);
 })->name('checkout');
+
+Route::post('/checkout', [OrderController::class, 'store'])->name('checkout.store');
 
 Route::prefix('/user')->middleware(['auth'])->group(function (){
     Route::get('profile/', [UserProfileController::class, 'profile']);
 } );
+
+Route::get('/products', [ProductsController::class, 'index'])->name('products.index');
 
 Route::get('/products/{id}', function ($id) {
     return Inertia::render('products/[id]/page', [
@@ -105,30 +130,40 @@ Route::prefix('/admin')->middleware(['auth'])->group(function () {
          Route::post('/products', 'store')->name('admin.products.store');
         Route::get('/products/{product}/edit', 'edit')->name('admin.products.edit');
         Route::get('/products/{product}', 'show')->name('admin.products.view');
-        Route::put('/products/{product}', 'update')->name('admin.products.update');
+        Route::put('/products/{product}', 'update')->name('admin.products');
         Route::delete('/products/{product}', 'delete')->name('admin.products.delete');
         Route::post('/products/{product}/restore', 'restore')->name('admin.products.restore');
     });
     
     // Inventory
-    Route::get('/inventory', function () {
-        return Inertia::render('admin/products/page'); // Use products page for now
-    })->name('admin.inventory');
+    Route::controller(\App\Http\Controllers\Admin\InventoryController::class)->group(function () {
+        Route::get('/inventory', 'index')->name('admin.inventory');
+        Route::put('/inventory/{product}/stock', 'updateStock')->name('admin.inventory.update-stock');
+    });
     
     // Customers
-    Route::get('/customers', function () {
-        return Inertia::render('admin/customers/page');
-    })->name('admin.customers');
+    Route::controller(CustomerController::class)->group(function () {
+        Route::get('/customers', 'index')->name('admin.customers');
+        //  Route::post('/customers', 'store')->name('admin.customers.store');
+        // Route::get('/customers/{product}/edit', 'edit')->name('admin.customers.edit');
+        // Route::get('/customers/{product}', 'show')->name('admin.customers.view');
+        // Route::put('/customers/{product}', 'update')->name('admin.customers');
+        // Route::delete('/customers/{product}', 'delete')->name('admin.customers.delete');
+        // Route::post('/customers/{product}/restore', 'restore')->name('admin.customers.restore');
+    });
+    // Route::get('/customers', function () {
+    //     return Inertia::render('admin/customers/page');
+    // })->name('admin.customers');
     
     // Orders
-    Route::get('/orders', function () {
-        return Inertia::render('orders/page');
-    })->name('admin.orders');
+    Route::controller(\App\Http\Controllers\Admin\OrderController::class)->group(function () {
+        Route::get('/orders', 'index')->name('admin.orders');
+        Route::get('/orders/{order}', 'show')->name('admin.orders.show');
+        Route::put('/orders/{order}/status', 'updateStatus')->name('admin.orders.update-status');
+    });
     
     // Analytics
-    Route::get('/analytics', function () {
-        return Inertia::render('admin/analytics/page');
-    })->name('admin.analytics');
+    Route::get('/analytics', [\App\Http\Controllers\Admin\AnalyticsController::class, 'index'])->name('admin.analytics');
     
     // Settings
     Route::get('/settings', function () {
@@ -137,10 +172,20 @@ Route::prefix('/admin')->middleware(['auth'])->group(function () {
 });
 
 // Admin API routes
-Route::prefix('/api/admin')->middleware(['auth'])->group(function () {
-    Route::post('/products', [AdminProductController::class, 'store'])->name('admin.products.store');
-});
+// Route::prefix('/api/admin')->middleware(['auth'])->group(function () {
+//     Route::post('/products', [AdminProductController::class, 'store'])->name('admin.products.store');
+// });
+// Checkout now handles order creation via /checkout POST route
+// Keeping this for backward compatibility if needed
+// Route::prefix('orders')->group(function () {
+//     Route::post('/', [OrderController::class, 'store'])->name('orders.store');
+// });
 
+// Order Receipt Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/orders/{order}/receipt/download', [OrderReceiptController::class, 'download'])->name('orders.receipt.download');
+    Route::get('/orders/{order}/receipt/view', [OrderReceiptController::class, 'view'])->name('orders.receipt.view');
+});
 // Payment routes
 Route::prefix('/api/payments')->middleware(['auth'])->group(function () {
     // Stripe routes

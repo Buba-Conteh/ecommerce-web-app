@@ -49,9 +49,9 @@ class ProductRequest extends FormRequest
             'barcode' => ['nullable', 'string', 'max:255'],
             'stock_quantity' => ['nullable', 'integer', 'min:0'],
             'min_stock_quantity' => ['nullable', 'integer', 'min:0'],
-            'track_stock' => ['boolean'],
-            'is_active' => ['boolean'],
-            'is_featured' => ['boolean'],
+            'track_stock' => ['nullable', 'in:true,false,1,0'],
+            'is_active' =>['nullable', 'in:true,false,1,0'],
+            'is_featured' =>['nullable', 'in:true,false,1,0'],
             'weight' => ['nullable', 'numeric', 'min:0'],
             'length' => ['nullable', 'numeric', 'min:0'],
             'width' => ['nullable', 'numeric', 'min:0'],
@@ -72,42 +72,42 @@ class ProductRequest extends FormRequest
             'tags.*' => ['exists:tags,id'],
             'images' => ['nullable', 'array'],
             'images.*.file' => ['required', 'image', 'max:5120'], // 5MB max
-            'images.*.is_primary' => ['boolean'],
+            'images.*.is_primary' =>['nullable', 'in:true,false,1,0'],
             'images.*.alt_text' => ['nullable', 'string', 'max:255'],
         ];
     }
 
-    function save() : bool {
+    function save(?Product $existingProduct = null) : Product|bool {
 
-        $product = Product::find($this->route('product')) ?? new Product();
+        $product = $existingProduct ?? Product::find($this->route('product')) ?? new Product();
         
         $product->name = $this->name;
         $product->slug = Str::slug($this->name);
-        $product->description = $this->description ?? null;
-        $product->short_description = $this->short_description ?? null;
+        $product->description = $this->description;
+        $product->short_description = $this->short_description;
         $product->price = $this->price;
-        $product->compare_price = $this->compare_price ?? null;
-        $product->cost_price = $this->cost_price ?? null;
-        $product->sku = $this->sku ?? null;
-        $product->barcode = $this->barcode ?? null;
+        $product->compare_price = $this->compare_price;
+        $product->cost_price = $this->cost_price;
+        $product->sku = $this->sku;
+        $product->barcode = $this->barcode;
         $product->stock_quantity = $this->stock_quantity ?? 0;
         $product->min_stock_quantity = $this->min_stock_quantity ?? 0;
-        $product->track_stock = $this->track_stock ?? true;
-        $product->is_active = $this->is_active ?? true;
-        $product->is_featured = $this->is_featured ?? false;
-        $product->weight = $this->weight ?? null;
-        $product->length = $this->length ?? null;
-        $product->width = $this->width ?? null;
-        $product->height = $this->height ?? null;
-        $product->sizes = $this->sizes ?? null;
-        $product->colors = $this->colors ?? null;
-        $product->features = $this->features ?? true;
-        $product->material = $this->material ?? null;
-        $product->origin = $this->origin ?? null;
-        $product->fit = $this->fit ?? null;
-        $product->care_instructions = $this->care_instructions ?? null;
-        $product->category_id = $this->category_id ?? null;
-        $product->brand_id = $this->brand_id ?? null;
+        $product->track_stock = $this->track_stock ? 1 : 0;
+        $product->is_active = $this->is_active ? 1 : 0;
+        $product->is_featured = $this->is_featured ? 1 : 0;
+        $product->weight = $this->weight;
+        $product->length = $this->length;
+        $product->width = $this->width;
+        $product->height = $this->height;
+        $product->sizes = $this->sizes;
+        $product->colors = $this->colors;
+        $product->features = $this->features;
+        $product->material = $this->material;
+        $product->origin = $this->origin;
+        $product->fit = $this->fit;
+        $product->care_instructions = $this->care_instructions;
+        $product->category_id = $this->category_id;
+        $product->brand_id = $this->brand_id;
 
         if ($product->save()){
 
@@ -122,7 +122,7 @@ class ProductRequest extends FormRequest
                 $product->tags()->detach();
             }
 
-            return true;
+            return $product;
         } 
             
         return false;

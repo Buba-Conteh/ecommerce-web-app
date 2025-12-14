@@ -49,8 +49,8 @@ Route::prefix('products')->group(function () {
     Route::get('/{id}', [ProductController::class, 'show']);
 });
 
-// Guest checkout (no auth required)
-Route::post('/guest-checkout', [GuestCheckoutController::class, 'store']);
+// Guest checkout is now handled by the unified /checkout route in web.php
+// Route::post('/guest-checkout', [GuestCheckoutController::class, 'store']);
 
 // Protected routes (require authentication)
 Route::middleware(['auth:sanctum'])->group(function () {

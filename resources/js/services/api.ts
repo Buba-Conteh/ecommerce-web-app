@@ -102,45 +102,30 @@ export const orderApi = {
       preserveScroll: true,
     }),
 
-  // Create new order
+  // Create new order via unified checkout
+  // Note: Use router.post('/checkout', ...) directly in checkout page
+  // This method is kept for backward compatibility
   createOrder: (data: {
-    shipping_address_id: number;
-    billing_address_id: number;
+    items: Array<{ id: number; quantity: number; price: number; name: string }>;
+    shipping_address_id?: number;
+    shipping_address?: any;
+    billing_address_id?: number;
+    billing_address?: any;
     payment_method: string;
+    subtotal: number;
+    tax_amount: number;
+    shipping_amount: number;
+    total: number;
     notes?: string;
   }) => 
-    router.post('/api/orders', data, {
-      preserveState: true,
-      preserveScroll: true,
-      onSuccess: () => {
-        // Reload to get updated cart/orders
-        router.reload({ only: ['orders', 'cart'] })
-      },
+    router.post('/checkout', data, {
+      preserveState: false,
+      preserveScroll: false,
     }),
 
-  // Create guest order from front-end cart
-  createGuestOrder: (data: {
-    customer: {
-      first_name: string;
-      last_name: string;
-      email: string;
-      address_line_1: string;
-      city: string;
-      state: string;
-      postal_code: string;
-      country: string;
-    };
-    items: Array<{ id: string | number; quantity: number; price: number }>;
-  }) =>
-    fetch('/api/guest-checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-      body: JSON.stringify(data),
-      credentials: 'same-origin',
-    }).then(async (res) => {
-      if (!res.ok) throw new Error('Failed to create guest order')
-      return res.json()
-    }),
+  // Create order via unified checkout (replaced old guest-checkout)
+  // Orders are now created through /checkout POST route
+  // This method is kept for backward compatibility but should use router.post('/checkout', ...) directly
 
   // Cancel order
   cancelOrder: (id: number) => 

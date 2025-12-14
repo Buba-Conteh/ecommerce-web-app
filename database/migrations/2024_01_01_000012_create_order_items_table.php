@@ -18,8 +18,8 @@ return new class extends Migration
             $table->string('product_name'); // Store product name at time of order
             $table->string('product_sku')->nullable();
             $table->integer('quantity');
-            $table->decimal('unit_price', 10, 2);
-            $table->decimal('total_price', 10, 2);
+            $table->unsignedBigInteger('unit_price');
+            $table->unsignedBigInteger('total_price');
             $table->json('product_options')->nullable(); // For variants, customizations, etc.
             $table->text('notes')->nullable();
             $table->timestamps();

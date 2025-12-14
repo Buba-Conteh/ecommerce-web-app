@@ -26,11 +26,11 @@ return new class extends Migration
                 'refunded'
             ])->default('pending');
             $table->string('currency', 3)->default('USD');
-            $table->decimal('subtotal', 10, 2);
-            $table->decimal('tax_amount', 10, 2)->default(0);
-            $table->decimal('shipping_amount', 10, 2)->default(0);
-            $table->decimal('discount_amount', 10, 2)->default(0);
-            $table->decimal('total', 10, 2);
+            $table->unsignedBigInteger('subtotal');
+            $table->unsignedBigInteger('tax_amount')->default(0);
+            $table->unsignedBigInteger('shipping_amount')->default(0);
+            $table->unsignedBigInteger('discount_amount')->default(0);
+            $table->unsignedBigInteger('total');
             $table->text('notes')->nullable();
             $table->text('customer_notes')->nullable();
             $table->string('shipping_method')->nullable();

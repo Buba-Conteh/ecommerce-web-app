@@ -11,20 +11,8 @@ class Customer extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'user_id',
-        'first_name',
-        'last_name',
-        'email',
-        'phone',
-        'date_of_birth',
-        'gender',
-        'notes',
-        'is_active',
-        'email_verified',
-        'email_verified_at',
-    ];
-
+    protected $guarded = [];
+       
     protected $casts = [
         'date_of_birth' => 'date',
         'is_active' => 'boolean',
